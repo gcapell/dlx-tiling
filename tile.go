@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gcapell/dlx"
 	"log"
+	"strings"
 )
 
 type board struct {
@@ -95,7 +96,27 @@ func parseBoard(s string) board {
 	return board{} // fixme
 }
 
-// Parse (newline-separated) ascii drawings of tiles
+// Parse (blank-line-separated) ascii drawings of tiles
 func asciiToTiles(s string) []tile {
-	return nil // fixme
+	chunks := strings.Split(s, "\n\n")
+	log.Printf("%d chunks, :%#v", len(chunks), chunks)
+	tiles := make([]tile, 0, len(chunks))
+	for _, c := range chunks {
+		t, err := asciiToTile(c)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		tiles = append(tiles, t)
+	}
+	for i, t := range tiles {
+		t.index = i
+	}
+	return tiles
+}
+
+// Parse ascii drawing of tile
+func asciiToTile(s string) (tile, error) {
+	var t tile
+	return t, nil // FIXME
 }
