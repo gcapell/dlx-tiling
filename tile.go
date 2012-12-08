@@ -10,7 +10,7 @@ import (
 
 type board struct {
 	tile
-	squareMap map[square]bool
+	index map[square]int	// position of each square
 }
 
 type tile struct {
@@ -102,7 +102,7 @@ func (t tile) translate(dx, dy int) tile {
 
 func (b *board) contains(t tile) bool {
 	for _, s := range t.squares {
-		if !b.squareMap[s] {
+		if _, ok := b.index[s]; !ok {
 			return false
 		}
 	}
@@ -136,11 +136,11 @@ func parseBoard(s string) (*board, error) {
 	if err != nil {
 		return nil, err
 	}
-	squareMap := make(map[square]bool)
-	for _, s := range squares {
-		squareMap[s] = true
+	index := make(map[square]int)
+	for i, s := range squares {
+		index[s] = i
 	}
-	return &board{tile{squares}, squareMap}, nil
+	return &board{tile{squares}, index}, nil
 }
 
 // Parse (blank-line-separated) ascii drawings of tiles
