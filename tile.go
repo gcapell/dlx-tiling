@@ -3,9 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/gcapell/dlx"
 	"log"
 	"strings"
+
+	"github.com/gcapell/dlx"
 )
 
 type board struct {
@@ -17,26 +18,17 @@ type tile struct {
 	squares []square
 }
 
-func (t tile) bounds() (minX, minY, maxX, maxY int) {
-	for i, s := range t.squares {
-		if i == 0 {
-			minX, minY, maxX, maxY = s.x, s.y, s.x, s.y
-			continue
-		}
-		if s.x < minX {
-			minX = s.x
-		}
+func (t tile) bounds() (maxX, maxY int) {
+	maxX, maxY = t.squares[0].x, t.squares[0].y
+	for _, s := range t.squares {
 		if s.x > maxX {
 			maxX = s.x
-		}
-		if s.y < minY {
-			minY = s.y
 		}
 		if s.y > maxY {
 			maxY = s.y
 		}
 	}
-	return
+	return maxX + 1, maxY + 1
 }
 
 type square struct {
@@ -46,7 +38,6 @@ type square struct {
 func main() {
 	tiles := asciiToTiles(tilesASCII)
 	b, err := parseBoard(boardASCII)
-	log.Printf("board: %v", b)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,29 +55,24 @@ func (b *board) solve(tiles []tile) (error, string) {
 
 	nTiles := len(tiles)
 	d := dlx.New(nTiles + len(b.squares))
-	_, _, maxX, maxY := b.bounds()
-	log.Printf("maxX:%d, maxY:%d", maxX, maxY)
+	maxX, maxY := b.bounds()
 
-	rows := 0
 	for tileIndex, t := range tiles {
+		rows := 0
 		for _, t2 := range permute(t) {
-			_, tmaxX, _, tmaxY := t2.bounds()
-			for x := 0; x < maxX-tmaxX; x++ {
-				for y := 0; y < maxY-tmaxY; y++ {
+			for x := 0; x < maxX; x++ {
+				for y := 0; y < maxY; y++ {
 					t3 := t2.translate(x, y)
 					if positions, ok := b.positions(t3); ok {
 						positions = append(positions, len(b.squares)+tileIndex)
-						log.Printf("Adding row %v", positions)
 						rows++
 						d.AddRow(positions)
-					} else {
-						log.Printf("couldn't place %v", t3)
 					}
 				}
 			}
 		}
+
 	}
-	log.Printf("%d rows", rows)
 	result := d.Search()
 	if result == nil {
 		return errors.New("No solution found"), ""
@@ -121,7 +107,6 @@ func permute(orig tile) []tile {
 	r = f(r, ror)
 	r = f(r, ror)
 
-	log.Printf("permute %v -> %d, %v", orig, len(reply), reply)
 	return reply
 }
 
@@ -198,7 +183,30 @@ func (b *board) positions(t tile) ([]int, bool) {
 
 // Return string representation of solution
 func (b *board) text(nTiles int, dlxResult [][]int) string {
-	return "cannot represent solution" // fixme
+
+	maxX, maxY := b.bounds()
+
+	letters := make([][]byte, maxY)
+	for j := 0; j < maxY; j++ {
+		letters[j] = make([]byte, maxX)
+		for i := range letters[j] {
+			letters[j][i] = ' '
+		}
+	}
+
+	for _, row := range dlxResult {
+		tile := row[len(row)-1] - len(b.squares)
+		for _, val := range row[:len(row)-1] {
+			s := b.squares[val]
+			letters[s.y][s.x] = byte('a' + tile)
+		}
+	}
+	result := ""
+	for _, line := range letters {
+		result += string(line) + "\n"
+	}
+
+	return result
 }
 
 func (b *board) sanityCheck(tiles []tile) error {
@@ -229,7 +237,6 @@ func parseBoard(s string) (*board, error) {
 // Parse (blank-line-separated) ascii drawings of tiles
 func asciiToTiles(s string) []tile {
 	chunks := strings.Split(s, "\n\n")
-	log.Printf("%d chunks, :%#v\n", len(chunks), chunks)
 	tiles := make([]tile, 0, len(chunks))
 	index := 0
 	for _, c := range chunks {
@@ -241,7 +248,6 @@ func asciiToTiles(s string) []tile {
 		tiles = append(tiles, tile{squares})
 		index++
 	}
-	log.Printf("Tiles: %v", tiles)
 	return tiles
 }
 
@@ -265,8 +271,7 @@ func asciiToSquares(s string) ([]square, error) {
 			}
 		}
 		row++
-		log.Println()
+
 	}
-	log.Printf("asciiToSquares: %#v->%v\n", chunks, squares)
-	return squares, nil // FIXME
+	return squares, nil
 }
