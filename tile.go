@@ -101,25 +101,23 @@ func asciiToTiles(s string) []tile {
 	chunks := strings.Split(s, "\n\n")
 	log.Printf("%d chunks, :%#v\n", len(chunks), chunks)
 	tiles := make([]tile, 0, len(chunks))
+	index := 0
 	for _, c := range chunks {
-		t, err := asciiToTile(c)
+		squares, err := asciiToSquares(c)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		tiles = append(tiles, t)
-	}
-	for i, t := range tiles {
-		t.index = i
+		tiles = append(tiles, tile{index, squares})
+		index++
 	}
 	return tiles
 }
 
 // Parse ascii drawing of tile
-func asciiToTile(s string) (tile, error) {
-	var t tile
+func asciiToSquares(s string) ([]square, error) {
+	squares := make([]square, 0, 6)
 	chunks := strings.Split(s, "\n")
-	log.Printf("asciiToTile: %#v\n", chunks)
 	row := 0
 	for _, chunk := range chunks {
 		if len(chunk) == 0 {
@@ -128,17 +126,16 @@ func asciiToTile(s string) (tile, error) {
 		for col, c := range chunk {
 			switch c {
 			case 'x':
-				t.squares = append(t.squares, square{col, row})
+				squares = append(squares, square{col, row})
 			case ' ':
-				log.Printf("blank")
+				continue
 			default:
-				return t, fmt.Errorf("unrecognised char %c", c)
+				return squares, fmt.Errorf("unrecognised char %c", c)
 			}
-			log.Printf("c: %#v %c %#v", c, c, c == 'x')
 		}
 		row++
 		log.Println()
 	}
-	log.Println("t.squares: %#v", t.squares)
-	return t, nil // FIXME
+	log.Printf("asciiToSquares: %#v->%v\n", chunks, squares)
+	return squares, nil // FIXME
 }

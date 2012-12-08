@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestASCIIToTile(test *testing.T) {
+func TestASCIIToSquares(test *testing.T) {
 	fmt.Println("we're testing")
 
 	src := "\n xx\nxx\n x\n x"
@@ -15,12 +15,12 @@ func TestASCIIToTile(test *testing.T) {
 		{1, 2},
 		{1, 3},
 	}
-	t, err := asciiToTile(src)
+	squares, err := asciiToSquares(src)
 	if err != nil {
 		test.Errorf("unexpected error %s with %q", err, src)
 		return
 	}
-	if diff := diffSquares(expectedSquares, t.squares); diff != "" {
+	if diff := diffSquares(expectedSquares, squares); diff != "" {
 		test.Errorf("converting %q got %s", src, diff)
 	}
 }
