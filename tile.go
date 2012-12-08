@@ -99,7 +99,7 @@ func parseBoard(s string) board {
 // Parse (blank-line-separated) ascii drawings of tiles
 func asciiToTiles(s string) []tile {
 	chunks := strings.Split(s, "\n\n")
-	log.Printf("%d chunks, :%#v", len(chunks), chunks)
+	log.Printf("%d chunks, :%#v\n", len(chunks), chunks)
 	tiles := make([]tile, 0, len(chunks))
 	for _, c := range chunks {
 		t, err := asciiToTile(c)
@@ -118,5 +118,24 @@ func asciiToTiles(s string) []tile {
 // Parse ascii drawing of tile
 func asciiToTile(s string) (tile, error) {
 	var t tile
+	chunks := strings.Split(s, "\n")
+	log.Printf("asciiToTile: %#v\n", chunks)
+	row := 0
+	for _, chunk := range chunks {
+		if len(chunk) == 0 {
+			continue
+		}
+		for col, c := range(chunk) {
+			switch c {
+				case 'x': t.squares = append(t.squares, square{col, row})
+				case ' ': log.Printf("blank")
+				default: return t, fmt.Errorf("unrecognised char %c", c)
+			}
+			log.Printf("c: %#v %c %#v", c, c, c == 'x')
+		}
+		row++
+		log.Println()
+	}
+	log.Println("t.squares: %#v", t.squares)
 	return t, nil // FIXME
 }
