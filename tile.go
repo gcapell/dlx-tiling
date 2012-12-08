@@ -125,11 +125,14 @@ func asciiToTile(s string) (tile, error) {
 		if len(chunk) == 0 {
 			continue
 		}
-		for col, c := range(chunk) {
+		for col, c := range chunk {
 			switch c {
-				case 'x': t.squares = append(t.squares, square{col, row})
-				case ' ': log.Printf("blank")
-				default: return t, fmt.Errorf("unrecognised char %c", c)
+			case 'x':
+				t.squares = append(t.squares, square{col, row})
+			case ' ':
+				log.Printf("blank")
+			default:
+				return t, fmt.Errorf("unrecognised char %c", c)
 			}
 			log.Printf("c: %#v %c %#v", c, c, c == 'x')
 		}

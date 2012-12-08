@@ -7,13 +7,13 @@ import (
 
 func TestASCIIToTile(test *testing.T) {
 	fmt.Println("we're testing")
-	
+
 	src := "\n xx\nxx\n x\n x"
 	expectedSquares := []square{
-		      {1,0},{2,0},
-		{0,1},{1,1},
-		      {1,2},
-		      {1,3},
+		{1, 0}, {2, 0},
+		{0, 1}, {1, 1},
+		{1, 2},
+		{1, 3},
 	}
 	t, err := asciiToTile(src)
 	if err != nil {
@@ -25,21 +25,21 @@ func TestASCIIToTile(test *testing.T) {
 	}
 }
 
-func diffSquares(a,b []square)string {
+func diffSquares(a, b []square) string {
 	bag := make(map[square]bool)
 	for _, s := range a {
 		bag[s] = true
 	}
-	b_only := make([]square,0)
+	b_only := make([]square, 0)
 	for _, s := range b {
 		if bag[s] {
-			delete(bag,s)
+			delete(bag, s)
 		} else {
-			b_only = append(b_only,s)
+			b_only = append(b_only, s)
 		}
 	}
-	a_only := make([]square,0)
-	for k,_ := range bag {
+	a_only := make([]square, 0)
+	for k, _ := range bag {
 		a_only = append(a_only, k)
 	}
 	problem := ""
