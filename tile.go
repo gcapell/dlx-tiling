@@ -9,14 +9,34 @@ import (
 )
 
 type board struct {
-	nSquares int
-	squares  []square
-	nTiles   int
+	tile
+	squareMap map[square]bool
 }
 
 type tile struct {
-	index   int
 	squares []square
+}
+
+func (t tile) bounds() (minX, minY, maxX, maxY int) {
+	for i, s := range t.squares {
+		if i == 0 {
+			minX, minY, maxX, maxY = s.x, s.y, s.x, s.y
+			continue
+		}
+		if s.x < minX {
+			minX = s.x
+		}
+		if s.x > maxX {
+			maxX = s.x
+		}
+		if s.y < minY {
+			minY = s.y
+		}
+		if s.y > maxY {
+			maxY = s.y
+		}
+	}
+	return
 }
 
 type square struct {
@@ -25,7 +45,10 @@ type square struct {
 
 func main() {
 	tiles := asciiToTiles(tilesASCII)
-	b := parseBoard(boardASCII)
+	b, err := parseBoard(boardASCII)
+	if err != nil {
+		log.Fatal(err)
+	}
 	err, result := b.solve(tiles)
 	if err != nil {
 		log.Fatal(err)
@@ -38,14 +61,19 @@ func (b *board) solve(tiles []tile) (error, string) {
 		return problem, ""
 	}
 
-	b.nTiles = len(tiles)
-	d := dlx.New(b.nTiles + b.nSquares)
-	for _, t := range tiles {
+	nTiles := len(tiles)
+	d := dlx.New(nTiles + len(b.squares))
+	_, maxX, _, maxY := b.bounds()
+
+	for tileIndex, t := range tiles {
 		for _, t2 := range permute(t) {
-			for _, p := range b.squares {
-				t3 := t2.translate(p)
-				if b.contains(t3) {
-					d.AddRow(b.dlxRow(t3))
+			_, tmaxX, _, tmaxY := t2.bounds()
+			for x := 0; x < maxX-tmaxX; x++ {
+				for y := 0; y < maxY-tmaxY; y++ {
+					t3 := t2.translate(x, y)
+					if b.contains(t3) {
+						d.AddRow(b.dlxRow(nTiles, tileIndex, t3))
+					}
 				}
 			}
 		}
@@ -54,7 +82,7 @@ func (b *board) solve(tiles []tile) (error, string) {
 	if result == nil {
 		return errors.New("No solution found"), ""
 	}
-	return nil, b.text(result)
+	return nil, b.text(nTiles, result)
 }
 
 // Permute returns all the distinct permutations (rotate/flip/...) of a tile.
@@ -62,20 +90,31 @@ func permute(t tile) []tile {
 	return nil // fixme
 }
 
-func (t tile) translate(offset square) tile {
-	return t // fixme
+func (t tile) translate(dx, dy int) tile {
+	s2 := make([]square, len(t.squares))
+	copy(s2, t.squares)
+	for i := range s2 {
+		s2[i].x += dx
+		s2[i].y += dy
+	}
+	return tile{s2}
 }
 
 func (b *board) contains(t tile) bool {
+	for _, s := range t.squares {
+		if !b.squareMap[s] {
+			return false
+		}
+	}
 	return true // fixme
 }
 
-func (b *board) dlxRow(t tile) []int {
+func (b *board) dlxRow(nTiles, tileIndex int, t tile) []int {
 	return nil // fixme
 }
 
 // Return string representation of solution
-func (b *board) text(dlxResult [][]int) string {
+func (b *board) text(nTiles int, dlxResult [][]int) string {
 	return "cannot represent solution" // fixme
 }
 
@@ -84,16 +123,24 @@ func (b *board) sanityCheck(tiles []tile) error {
 	for _, t := range tiles {
 		s += len(t.squares)
 	}
-	if s != b.nSquares {
+	if s != len(b.squares) {
 		return fmt.Errorf("tiles cover %d squares, board has %d squares",
-			s, b.nSquares)
+			s, len(b.squares))
 	}
 	return nil
 }
 
 // Parse ascii drawing of board
-func parseBoard(s string) board {
-	return board{} // fixme
+func parseBoard(s string) (*board, error) {
+	squares, err := asciiToSquares(s)
+	if err != nil {
+		return nil, err
+	}
+	squareMap := make(map[square]bool)
+	for _, s := range squares {
+		squareMap[s] = true
+	}
+	return &board{tile{squares}, squareMap}, nil
 }
 
 // Parse (blank-line-separated) ascii drawings of tiles
@@ -108,9 +155,10 @@ func asciiToTiles(s string) []tile {
 			log.Println(err)
 			continue
 		}
-		tiles = append(tiles, tile{index, squares})
+		tiles = append(tiles, tile{squares})
 		index++
 	}
+	log.Printf("Tiles: %v", tiles)
 	return tiles
 }
 
